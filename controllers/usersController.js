@@ -56,7 +56,13 @@ const updateUser = asyncHandler(async (req, res) => {
   } = req.body;
 
   // Confirm data
-  if (!id || !username || !Array.isArray(roles) || !roles.length || typeof active !== 'boolean') {
+  if (
+    !id
+    || !username
+    || !Array.isArray(roles)
+    || !roles.length
+    || typeof active !== 'boolean'
+  ) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
@@ -90,7 +96,26 @@ const updateUser = asyncHandler(async (req, res) => {
 // @route Delete /users
 // @acess Private
 const deleteUser = asyncHandler(async (req, res) => {
+  const { id } = req.body;
 
+  if (!id) {
+    return res.status(400).json({ message: 'User ID Required' });
+  }
+
+  const notes = await Note.findOne({ user: id }).lean().exec();
+  if (notes?.length) {
+    return res.status(400).json({ message: 'User has been assigned notes' });
+  }
+
+  const user = await User.findById(id).exec();
+
+  if (!user) {
+    return res.status(400).json({ message: 'User not found' });
+  }
+
+  const result = await user.deleteOne();
+  const reply = `Username ${result.username} with ID ${result._id} deleted`;
+  res.json(reply);
 });
 
 module.exports = {
